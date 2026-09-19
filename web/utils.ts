@@ -37,6 +37,7 @@ const SVG_ICONS = {
 	fileList: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M 2,3 V 4.5 H 4 V 3 Z M 5.5,3 V 4.5 H 18 V 3 Z M 2,7 V 8.5 H 4 V 7 Z M 5.5,7 V 8.5 H 18 V 7 Z M 2,11 v 1.5 H 4 V 11 Z m 3.5,0 v 1.5 H 18 V 11 Z M 2,15 v 1.5 H 4 V 15 Z m 3.5,0 v 1.5 H 18 V 15 Z"/></svg>',
 	fileTree: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M 2,3 V 4.5 H 4 V 3 Z M 5.5,3 V 4.5 H 14 V 3 Z M 4,7 V 8.5 H 6 V 7 Z M 7.5,7 V 8.5 H 16 V 7 Z M 6,11 v 1.5 H 8 V 11 Z m 3.5,0 v 1.5 H 18 V 11 Z M 4,15 v 1.5 H 6 V 15 Z m 3.5,0 v 1.5 H 16 V 15 Z"/></svg>',
 	inconclusive: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 13 13"><path fill-rule="evenodd" d="M 6.5,0 C 2.91,0 0,2.91 0,6.5 0,10.09 2.91,13 6.5,13 10.09,13 13,10.09 13,6.5 13,2.91 10.09,0 6.5,0 Z m 0.03,2.35 v 0 c 0.47,0 0.88,0.05 1.24,0.14 0.36,0.1 0.67,0.23 0.93,0.41 0.24,0.18 0.43,0.4 0.58,0.67 0.14,0.27 0.2,0.58 0.2,0.93 0,0.23 0,0.45 -0.09,0.63 C 9.3,5.31 9.14,5.49 9.05,5.62 8.91,5.79 8.9,5.82 8.7,6.02 8.53,6.2 8.35,6.36 8.15,6.5 8.03,6.6 7.94,6.7 7.85,6.79 7.77,6.88 7.7,6.97 7.65,7.08 7.6,7.18 7.56,7.29 7.53,7.4 7.5,7.52 7.5,7.54 7.5,7.67 H 5.75 c 0,-0.23 0,-0.33 0.03,-0.51 C 5.81,6.96 5.86,6.78 5.93,6.61 5.99,6.46 6.08,6.31 6.2,6.16 6.32,6.02 6.44,5.89 6.64,5.76 6.93,5.56 7.02,5.44 7.15,5.21 7.28,4.98 7.36,4.81 7.36,4.58 7.36,4.29 7.3,4.1 7.15,3.96 7.01,3.82 6.82,3.76 6.53,3.76 6.43,3.76 6.33,3.78 6.21,3.81 6.09,3.84 6.03,3.9 5.94,3.98 5.86,4.05 5.79,4.1 5.73,4.19 5.66,4.27 5.63,4.38 5.64,4.49 H 3.52 C 3.52,4.09 3.66,3.9 3.81,3.61 3.96,3.32 4.18,3.07 4.44,2.89 4.71,2.71 5.02,2.58 5.38,2.49 5.75,2.4 6.14,2.35 6.53,2.35 Z M 6.14,8.72 H 7.2 c 0.3,0 0.53,0.24 0.53,0.53 v 1.07 0 c 0,0.3 -0.23,0.53 -0.53,0.53 H 6.14 c -0.29,0 -0.53,-0.24 -0.53,-0.53 V 9.25 c 0,-0.3 0.25,-0.53 0.53,-0.53 z"/></svg>',
+	merged: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><g class="mergedFork" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="3.5" cy="2.5" r="1.4"/><circle cx="3.5" cy="13" r="1.4"/><circle cx="10.5" cy="13" r="1.4"/><path d="M3.5 3.9v7.7M3.5 6c0 3 7 2.6 7 5.6"/></g><path class="mergedCheck" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9.3 4.4l1.5 1.5 3.5-4"/></svg>',
 	linkExternal: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3,3L3,17L17,17L17,13L15.5,13L15.5,15.5L4.5,15.5L4.5,4.5L7,4.5L7,3L3,3z M10,3L10,4.5L14.4,4.5L9.3,9.7L10.3,10.7L15.5,5.6L15.5,10L17,10L17,3L10,3z"/></svg>',
 	passed: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 13 13"><path fill-rule="evenodd" d="M 6.5,0 A 6.5,6.5 0 0 0 0,6.5 6.5,6.5 0 0 0 6.5,13 6.5,6.5 0 0 0 13,6.5 6.5,6.5 0 0 0 6.5,0 Z M 9.64,2.95 11.2,4.5 5.02,10.68 C 3.92,9.57 2.81,8.46 1.7,7.35 L 3.26,5.8 5.02,7.57 Z"/></svg>',
 	plus: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><path fill-rule="evenodd" d="M6,2V6H2v2h4v4H8V8h4V6H8V2Z"/></svg>',
@@ -65,6 +66,7 @@ const ELLIPSIS = '&#8230;';
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 const UNCOMMITTED = '*';
 const SHOW_ALL_BRANCHES = '';
+const PROTECTED_PULL_REQUEST_BRANCHES = ['develop', 'main', 'master', 'preprod', 'production'];
 
 const COLUMN_HIDDEN = -100;
 const COLUMN_AUTO = -101;
@@ -192,6 +194,65 @@ function getRepoName(path: string) {
 	} else {
 		const p = path.endsWith('/') ? path.substring(0, path.length - 1) : path; // Remove trailing slash if it exists
 		return p.substring(p.lastIndexOf('/') + 1);
+	}
+}
+
+/**
+ * Automatically create a Bitbucket Cloud Pull Request configuration from Git remotes.
+ */
+function getAutoBitbucketPullRequestConfig(config: Readonly<GG.GitRepoConfig> | null, branches: ReadonlyArray<string>): GG.PullRequestConfig | null {
+	if (config === null) return null;
+
+	const bitbucketRemotes = config.remotes.map((remote) => ({
+		name: remote.name,
+		repo: parseBitbucketCloudRemoteUrl(remote.url) || parseBitbucketCloudRemoteUrl(remote.pushUrl)
+	})).filter((remote): remote is { name: string, repo: { owner: string, name: string } } => remote.repo !== null);
+	if (bitbucketRemotes.length === 0) return null;
+
+	const source = bitbucketRemotes.find((remote) => remote.name === 'origin') || bitbucketRemotes[0];
+	const destination = bitbucketRemotes.find((remote) => remote.name === 'upstream') || source;
+	const destinationBranches = branches
+		.filter((branch) => branch.startsWith('remotes/' + destination.name + '/') && branch !== 'remotes/' + destination.name + '/HEAD')
+		.map((branch) => branch.substring(destination.name.length + 9));
+	const destinationBranch = PROTECTED_PULL_REQUEST_BRANCHES.find((branch) => destinationBranches.includes(branch)) || 'main';
+
+	return {
+		provider: GG.PullRequestProvider.Bitbucket,
+		custom: null,
+		hostRootUrl: 'https://bitbucket.org',
+		sourceRemote: source.name,
+		sourceOwner: source.repo.owner,
+		sourceRepo: source.repo.name,
+		destRemote: destination.name,
+		destOwner: destination.repo.owner,
+		destRepo: destination.repo.name,
+		destProjectId: '',
+		destBranch: destinationBranch
+	};
+}
+
+/**
+ * Parse a Bitbucket Cloud repository remote URL.
+ */
+function parseBitbucketCloudRemoteUrl(remoteUrl: string | null): { owner: string, name: string } | null {
+	if (remoteUrl === null) return null;
+
+	let url = remoteUrl.trim();
+	if (/^[^@/]+@(?:www\.|altssh\.)?bitbucket\.org:/i.test(url)) {
+		url = 'ssh://' + url.replace(/:([^:]*)$/, '/$1');
+	}
+
+	try {
+		const parsed = new URL(url);
+		const hostname = parsed.hostname.toLowerCase();
+		if (hostname !== 'bitbucket.org' && hostname !== 'www.bitbucket.org' && hostname !== 'altssh.bitbucket.org') return null;
+		const parts = parsed.pathname.split('/').filter((part) => part !== '');
+		if (parts.length !== 2) return null;
+		const owner = decodeURIComponent(parts[0]);
+		const name = decodeURIComponent(parts[1]).replace(/\.git$/i, '');
+		return owner !== '' && name !== '' ? { owner: owner, name: name } : null;
+	} catch (_) {
+		return null;
 	}
 }
 

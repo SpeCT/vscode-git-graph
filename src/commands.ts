@@ -1,6 +1,7 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
 import { AvatarManager } from './avatarManager';
+import { clearBitbucketPullRequestCache } from './bitbucketPullRequests';
 import { getConfig } from './config';
 import { DataSource } from './dataSource';
 import { DiffDocProvider, decodeDiffDocUri } from './diffDocProvider';
@@ -50,6 +51,8 @@ export class CommandManager extends Disposable {
 		this.registerCommand('git-graph.addGitRepository', () => this.addGitRepository());
 		this.registerCommand('git-graph.removeGitRepository', () => this.removeGitRepository());
 		this.registerCommand('git-graph.clearAvatarCache', () => this.clearAvatarCache());
+		this.registerCommand('git-graph.setBitbucketApiToken', () => this.setBitbucketApiToken());
+		this.registerCommand('git-graph.clearBitbucketApiToken', () => this.clearBitbucketApiToken());
 		this.registerCommand('git-graph.fetch', () => this.fetch());
 		this.registerCommand('git-graph.endAllWorkspaceCodeReviews', () => this.endAllWorkspaceCodeReviews());
 		this.registerCommand('git-graph.endSpecificWorkspaceCodeReview', () => this.endSpecificWorkspaceCodeReview());
@@ -192,6 +195,28 @@ export class CommandManager extends Disposable {
 		}, () => {
 			showErrorMessage('An unexpected error occurred while running the command "Clear Avatar Cache".');
 		});
+	}
+
+	private async setBitbucketApiToken() {
+		const token = await vscode.window.showInputBox({
+			ignoreFocusOut: true,
+			password: true,
+			placeHolder: 'Bitbucket Cloud API token',
+			prompt: 'Enter an API token with Pull requests: Read permission.'
+		});
+		if (typeof token === 'undefined' || token.trim() === '') return;
+
+		await this.extensionState.setBitbucketApiToken(token.trim());
+		clearBitbucketPullRequestCache();
+		showInformationMessage('The Bitbucket Cloud API token was securely stored by Visual Studio Code.');
+		if (GitGraphView.currentPanel) GitGraphView.currentPanel.refreshPullRequests();
+	}
+
+	private async clearBitbucketApiToken() {
+		await this.extensionState.clearBitbucketApiToken();
+		clearBitbucketPullRequestCache();
+		showInformationMessage('The stored Bitbucket Cloud API token was cleared.');
+		if (GitGraphView.currentPanel) GitGraphView.currentPanel.refreshPullRequests();
 	}
 
 	/**

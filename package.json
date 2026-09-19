@@ -1,7 +1,7 @@
 {
 	"name": "git-graph",
 	"displayName": "Git Graph",
-	"version": "1.30.0",
+	"version": "1.30.5",
 	"publisher": "mhutchie",
 	"author": {
 		"name": "Michael Hutchison",
@@ -30,7 +30,7 @@
 	"license": "SEE LICENSE IN 'LICENSE'",
 	"icon": "resources/icon.png",
 	"engines": {
-		"vscode": "^1.38.0"
+		"vscode": "^1.53.0"
 	},
 	"extensionKind": [
 		"workspace"
@@ -59,6 +59,16 @@
 				"category": "Git Graph",
 				"command": "git-graph.clearAvatarCache",
 				"title": "Clear Avatar Cache"
+			},
+			{
+				"category": "Git Graph",
+				"command": "git-graph.setBitbucketApiToken",
+				"title": "Set Bitbucket Cloud API Token..."
+			},
+			{
+				"category": "Git Graph",
+				"command": "git-graph.clearBitbucketApiToken",
+				"title": "Clear Bitbucket Cloud API Token"
 			},
 			{
 				"category": "Git Graph",
@@ -1531,7 +1541,7 @@
 	"devDependencies": {
 		"@types/jest": "26.0.19",
 		"@types/node": "8.10.62",
-		"@types/vscode": "1.38.0",
+		"@types/vscode": "1.53.0",
 		"@typescript-eslint/eslint-plugin": "4.10.0",
 		"@typescript-eslint/parser": "4.10.0",
 		"eslint": "7.15.0",

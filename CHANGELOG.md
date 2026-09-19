@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+* Display all Bitbucket Cloud Pull Requests beside branch labels, including compact lifecycle and review status indicators, with links to open them in the browser. Pull Requests are loaded using server-side branch filtering, connection reuse, request deduplication, and a short-lived cache.
+* Add a create Pull Request button beside eligible branches that have never had a Pull Request. The button opens Bitbucket's pre-filled creation page.
+* Automatically configure Bitbucket Cloud Pull Request integration from Git remotes, while retaining optional per-repository overrides.
+* Store the optional read-only Bitbucket Cloud API token in Visual Studio Code Secret Storage.
+
 ## 1.30.0 - 2021-04-05
 * #395 Added a "Force Fetch" option onto the "Fetch into Local Branch" Dialog, allowing any local branch (that's not checked out) to be reset to the remote branch. This dialog is accessed via the Remote Branch Context Menu.
 * #457 New "View Diff with Working File" action on the File Context Menu in the Commit Details View.

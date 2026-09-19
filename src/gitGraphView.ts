@@ -1,13 +1,14 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { AvatarManager } from './avatarManager';
+import { clearBitbucketPullRequestCache, getBitbucketPullRequests } from './bitbucketPullRequests';
 import { getConfig } from './config';
 import { DataSource, GitCommitDetailsData, GitConfigKey } from './dataSource';
 import { ExtensionState } from './extensionState';
 import { Logger } from './logger';
 import { RepoFileWatcher } from './repoFileWatcher';
 import { RepoManager } from './repoManager';
-import { ErrorInfo, GitConfigLocation, GitGraphViewInitialState, GitPushBranchMode, GitRepoSet, LoadGitGraphViewTo, RequestMessage, ResponseMessage, TabIconColourTheme } from './types';
+import { ErrorInfo, GitConfigLocation, GitGraphViewInitialState, GitPushBranchMode, GitRepoSet, LoadGitGraphViewTo, PullRequestProvider, RequestMessage, ResponseMessage, TabIconColourTheme } from './types';
 import { UNABLE_TO_FIND_GIT_MSG, UNCOMMITTED, archive, copyFilePathToClipboard, copyToClipboard, createPullRequest, getNonce, openExtensionSettings, openExternalUrl, openFile, showErrorMessage, viewDiff, viewDiffWithWorkingFile, viewFileAtRevision, viewScm } from './utils';
 import { Disposable, toDisposable } from './utils/disposable';
 
@@ -32,6 +33,10 @@ export class GitGraphView extends Disposable {
 
 	private loadRepoInfoRefreshId: number = 0;
 	private loadCommitsRefreshId: number = 0;
+
+	public refreshPullRequests() {
+		this.sendMessage({ command: 'refresh' });
+	}
 
 	/**
 	 * If a Git Graph View already exists, show and update it. Otherwise, create a Git Graph View.
@@ -419,6 +424,17 @@ export class GitGraphView extends Disposable {
 					...await this.dataSource.getConfig(msg.repo, msg.remotes)
 				});
 				break;
+			case 'loadPullRequests':
+				const pullRequestResult = msg.config !== null && msg.config.provider === PullRequestProvider.Bitbucket
+					? await getBitbucketPullRequests(msg.config, await this.extensionState.getBitbucketApiToken(), msg.branches)
+					: { pullRequests: [], authenticationRequired: false, error: null };
+				this.sendMessage({
+					command: 'loadPullRequests',
+					repo: msg.repo,
+					refreshId: msg.refreshId,
+					...pullRequestResult
+				});
+				break;
 			case 'loadRepoInfo':
 				this.loadRepoInfoRefreshId = msg.refreshId;
 				let repoInfo = await this.dataSource.getRepoInfo(msg.repo, msg.showRemoteBranches, msg.showStashes, msg.hideRemotes), isRepo = true;
@@ -564,6 +580,22 @@ export class GitGraphView extends Disposable {
 				this.sendMessage({
 					command: 'setGlobalViewState',
 					error: await this.extensionState.setGlobalViewState(msg.state)
+				});
+				break;
+			case 'setBitbucketApiToken':
+				const bitbucketApiToken = await vscode.window.showInputBox({
+					ignoreFocusOut: true,
+					password: true,
+					placeHolder: 'Bitbucket Cloud API token',
+					prompt: 'Enter an API token with Pull requests: Read permission.'
+				});
+				if (typeof bitbucketApiToken !== 'undefined' && bitbucketApiToken.trim() !== '') {
+					await this.extensionState.setBitbucketApiToken(bitbucketApiToken.trim());
+					clearBitbucketPullRequestCache();
+				}
+				this.sendMessage({
+					command: 'setBitbucketApiToken',
+					stored: typeof bitbucketApiToken !== 'undefined' && bitbucketApiToken.trim() !== ''
 				});
 				break;
 			case 'setRepoState':

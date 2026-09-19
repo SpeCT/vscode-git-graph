@@ -733,6 +733,69 @@ body.vscode-high-contrast #commitTable tr.commit.findCurrentCommit{
 	font-style:italic;
 }
 
+.gitRefPullRequest{
+	display:inline-flex;
+	align-items:center;
+	height:18px;
+	line-height:18px;
+	padding:0 5px;
+	border-left:1px solid rgba(128,128,128,0.45);
+	color:var(--vscode-textLink-foreground);
+	font-style:normal;
+	font-weight:600;
+	cursor:pointer;
+}
+.gitRefPullRequest:hover{
+	background-color:rgba(128,128,128,0.15);
+	color:var(--vscode-textLink-activeForeground);
+}
+.gitRefPullRequest.create{
+	padding:0 3px;
+	vertical-align:top;
+}
+.gitRefPullRequest.create svg{
+	width:12px;
+	height:12px;
+	fill:currentColor;
+}
+.gitRefPullRequest.authenticate{
+	color:var(--vscode-descriptionForeground);
+}
+.gitRefPullRequestStatus{
+	display:inline-flex;
+	align-items:center;
+	margin-left:4px;
+	font-size:9px;
+	line-height:11px;
+}
+.gitRefPullRequestStatus svg{
+	width:11px;
+	height:11px;
+	fill:currentColor;
+}
+.gitRefPullRequestStatus span{
+	margin-left:1px;
+	font-weight:400;
+}
+.gitRefPullRequestStatus.merged, .gitRefPullRequestStatus.approved{
+	color:var(--vscode-testing-iconPassed, #73c991);
+}
+.gitRefPullRequestStatus.merged .mergedFork{
+	stroke:var(--vscode-textLink-foreground, #75beff);
+}
+.gitRefPullRequestStatus.merged .mergedCheck{
+	stroke:var(--vscode-testing-iconPassed, #73c991);
+}
+.gitRefPullRequestStatus.changesRequested, .gitRefPullRequestStatus.declined{
+	color:var(--vscode-testing-iconFailed, #f14c4c);
+}
+.gitRefPullRequestStatus.awaitingReview{
+	color:var(--vscode-testing-iconQueued, #cca700);
+}
+.gitRefPullRequestStatus.superseded{
+	color:var(--vscode-descriptionForeground);
+}
+
 #commitTable tr.commit.commitDetailsOpen:hover .gitRef, #commitTable tr.commit.commitDetailsOpen.contextMenuActive .gitRef, #commitTable tr.commit.commitDetailsOpen.dialogActive .gitRef, #commitTable tr.commit.commitDetailsOpen.graphVertexActive .gitRef{
 	background-color:rgba(128,128,128,0.05);
 }

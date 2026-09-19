@@ -27,10 +27,23 @@ export const mocks = {
 		extensionPath: '/path/to/extension',
 		globalState: {
 			get: jest.fn(),
-			update: jest.fn()
+			update: jest.fn(),
+			setKeysForSync: jest.fn()
 		},
+		extensionUri: <vscode.Uri><unknown>{},
+		environmentVariableCollection: <vscode.EnvironmentVariableCollection><unknown>{},
+		storageUri: <vscode.Uri><unknown>{},
+		globalStorageUri: <vscode.Uri><unknown>{},
+		logUri: <vscode.Uri><unknown>{},
+		extensionMode: <any>3,
 		globalStoragePath: '/path/to/globalStorage',
 		logPath: '/path/to/logs',
+		secrets: {
+			get: jest.fn(),
+			store: jest.fn(),
+			delete: jest.fn(),
+			onDidChange: jest.fn()
+		},
 		storagePath: '/path/to/storage',
 		subscriptions: [],
 		workspaceState: {
@@ -164,6 +177,7 @@ export const window = {
 	createTerminal: jest.fn(() => mocks.terminal),
 	showErrorMessage: jest.fn(),
 	showInformationMessage: jest.fn(),
+	showInputBox: jest.fn(),
 	showOpenDialog: jest.fn(),
 	showQuickPick: jest.fn(),
 	showSaveDialog: jest.fn()

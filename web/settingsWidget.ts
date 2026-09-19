@@ -214,8 +214,9 @@ class SettingsWidget {
 
 			if (this.config !== null) {
 				html += '<div class="settingsSection centered"><h3>Pull Request Creation</h3>';
-				const pullRequestConfig = this.repo.pullRequestConfig;
+				const pullRequestConfig = this.view.getEffectivePullRequestConfig();
 				if (pullRequestConfig !== null) {
+					const automaticallyConfigured = this.repo.pullRequestConfig === null;
 					const provider = escapeHtml((pullRequestConfig.provider === GG.PullRequestProvider.Bitbucket
 						? 'Bitbucket'
 						: pullRequestConfig.provider === GG.PullRequestProvider.Custom
@@ -227,11 +228,12 @@ class SettingsWidget {
 					const source = escapeHtml(pullRequestConfig.sourceOwner + '/' + pullRequestConfig.sourceRepo + ' (' + pullRequestConfig.sourceRemote + ')');
 					const destination = escapeHtml(pullRequestConfig.destOwner + '/' + pullRequestConfig.destRepo + (pullRequestConfig.destRemote !== null ? ' (' + pullRequestConfig.destRemote + ')' : ''));
 					const destinationBranch = escapeHtml(pullRequestConfig.destBranch);
-					html += '<table><tr><td class="left">Provider:</td><td class="leftWithEllipsis" title="' + provider + '">' + provider + '</td></tr>' +
+					html += (automaticallyConfigured ? '<span>Automatically detected from Git remotes. Customize only if this repository needs different settings.</span>' : '') +
+						'<table><tr><td class="left">Provider:</td><td class="leftWithEllipsis" title="' + provider + '">' + provider + '</td></tr>' +
 						'<tr><td class="left">Source Repo:</td><td class="leftWithEllipsis" title="' + source + '">' + source + '</td></tr>' +
 						'<tr><td class="left">Destination Repo:</td><td class="leftWithEllipsis" title="' + destination + '">' + destination + '</td></tr>' +
 						'<tr><td class="left">Destination Branch:</td><td class="leftWithEllipsis" title="' + destinationBranch + '">' + destinationBranch + '</td></tr></table>' +
-						'<div class="settingsSectionButtons"><div id="editPullRequestIntegration" class="editBtn">' + SVG_ICONS.pencil + 'Edit</div><div id="removePullRequestIntegration" class="removeBtn">' + SVG_ICONS.close + 'Remove</div></div>';
+						'<div class="settingsSectionButtons"><div id="editPullRequestIntegration" class="editBtn">' + SVG_ICONS.pencil + (automaticallyConfigured ? 'Customize' : 'Edit') + '</div>' + (automaticallyConfigured ? '' : '<div id="removePullRequestIntegration" class="removeBtn">' + SVG_ICONS.close + 'Remove</div>') + '</div>';
 				} else {
 					html += '<span>Pull Request Creation automates the opening and pre-filling of a Pull Request form, directly from a branch\'s context menu.</span>' +
 						'<div class="settingsSectionButtons"><div id="editPullRequestIntegration" class="addBtn">' + SVG_ICONS.plus + 'Configure "Pull Request Creation" Integration</div></div>';
@@ -482,7 +484,9 @@ class SettingsWidget {
 					}
 
 					let config: GG.DeepWriteable<GG.PullRequestConfig>;
-					if (this.repo.pullRequestConfig === null) {
+					if (this.repo.pullRequestConfig === null && this.view.getEffectivePullRequestConfig() !== null) {
+						config = Object.assign({}, this.view.getEffectivePullRequestConfig()!);
+					} else if (this.repo.pullRequestConfig === null) {
 						let originIndex = this.config.remotes.findIndex((remote) => remote.name === 'origin');
 						let sourceRemoteUrl = this.config.remotes[originIndex > -1 ? originIndex : 0].url;
 						let provider: GG.PullRequestProvider;
@@ -567,6 +571,7 @@ class SettingsWidget {
 	private setPullRequestConfig(config: GG.PullRequestConfig | null) {
 		if (this.currentRepo === null) return;
 		this.view.saveRepoStateValue(this.currentRepo, 'pullRequestConfig', config);
+		this.view.refreshPullRequests();
 		this.render();
 	}
 

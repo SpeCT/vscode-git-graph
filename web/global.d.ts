@@ -54,6 +54,10 @@ declare global {
 		readonly gitRemotes: ReadonlyArray<string>;
 		readonly gitStashes: ReadonlyArray<GG.GitStash>;
 		readonly gitTags: ReadonlyArray<string>;
+		readonly pullRequests: ReadonlyArray<GG.BitbucketPullRequest>;
+		readonly pullRequestsLoaded: boolean;
+		readonly pullRequestAuthenticationRequired: boolean;
+		readonly pullRequestQueryKey: string | null;
 		readonly commits: GG.GitCommit[];
 		readonly commitHead: string | null;
 		readonly avatars: AvatarImageCollection;

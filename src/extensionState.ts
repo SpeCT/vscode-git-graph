@@ -9,6 +9,7 @@ import { Event } from './utils/event';
 
 const AVATAR_STORAGE_FOLDER = '/avatars';
 const AVATAR_CACHE = 'avatarCache';
+const BITBUCKET_API_TOKEN = 'bitbucketApiToken';
 const CODE_REVIEWS = 'codeReviews';
 const GLOBAL_VIEW_STATE = 'globalViewState';
 const IGNORED_REPOS = 'ignoredRepos';
@@ -64,6 +65,7 @@ export type CodeReviews = { [repo: string]: { [id: string]: CodeReviewData } };
 export class ExtensionState extends Disposable {
 	private readonly globalState: vscode.Memento;
 	private readonly workspaceState: vscode.Memento;
+	private readonly secretStorage: vscode.SecretStorage;
 	private readonly globalStoragePath: string;
 	private avatarStorageAvailable: boolean = false;
 
@@ -76,6 +78,7 @@ export class ExtensionState extends Disposable {
 		super();
 		this.globalState = context.globalState;
 		this.workspaceState = context.workspaceState;
+		this.secretStorage = context.secrets;
 
 		this.globalStoragePath = getPathFromStr(context.globalStoragePath);
 		fs.stat(this.globalStoragePath + AVATAR_STORAGE_FOLDER, (err) => {
@@ -98,6 +101,21 @@ export class ExtensionState extends Disposable {
 				this.setLastKnownGitPath(gitExecutable.path);
 			})
 		);
+	}
+
+
+	/* Bitbucket Cloud Authentication */
+
+	public getBitbucketApiToken() {
+		return this.secretStorage.get(BITBUCKET_API_TOKEN).then((token) => token || null);
+	}
+
+	public setBitbucketApiToken(token: string) {
+		return this.secretStorage.store(BITBUCKET_API_TOKEN, token);
+	}
+
+	public clearBitbucketApiToken() {
+		return this.secretStorage.delete(BITBUCKET_API_TOKEN);
 	}
 
 

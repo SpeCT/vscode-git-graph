@@ -6,6 +6,11 @@ class GitGraphView {
 	private gitRemotes: ReadonlyArray<string> = [];
 	private gitStashes: ReadonlyArray<GG.GitStash> = [];
 	private gitTags: ReadonlyArray<string> = [];
+	private pullRequests: ReadonlyArray<GG.BitbucketPullRequest> = [];
+	private pullRequestsLoaded: boolean = false;
+	private pullRequestAuthenticationRequired: boolean = false;
+	private pullRequestQueryKey: string | null = null;
+	private loadPullRequestsRefreshId: number = 0;
 	private commits: GG.GitCommit[] = [];
 	private commitHead: string | null = null;
 	private commitLookup: { [hash: string]: number } = {};
@@ -125,6 +130,10 @@ class GitGraphView {
 			this.expandedCommit = prevState.expandedCommit;
 			this.avatars = prevState.avatars;
 			this.gitConfig = prevState.gitConfig;
+			this.pullRequests = prevState.pullRequests || [];
+			this.pullRequestsLoaded = prevState.pullRequestsLoaded || false;
+			this.pullRequestAuthenticationRequired = prevState.pullRequestAuthenticationRequired || false;
+			this.pullRequestQueryKey = prevState.pullRequestQueryKey || null;
 			this.loadRepoInfo(prevState.gitBranches, prevState.gitBranchHead, prevState.gitRemotes, prevState.gitStashes, true);
 			this.loadCommits(prevState.commits, prevState.commitHead, prevState.gitTags, prevState.moreCommitsAvailable, prevState.onlyFollowFirstParent);
 			this.findWidget.restoreState(prevState.findWidget);
@@ -213,6 +222,10 @@ class GitGraphView {
 		this.gitRemotes = [];
 		this.gitStashes = [];
 		this.gitTags = [];
+		this.pullRequests = [];
+		this.pullRequestsLoaded = false;
+		this.pullRequestAuthenticationRequired = false;
+		this.pullRequestQueryKey = null;
 		this.currentBranches = null;
 		this.renderFetchButton();
 		this.closeCommitDetails(false);
@@ -272,6 +285,7 @@ class GitGraphView {
 
 		// Set up branch dropdown options
 		this.branchDropdown.setOptions(this.getBranchOptions(true), this.currentBranches);
+		this.requestLoadPullRequests();
 
 		// Remove hidden remotes that no longer exist
 		let hiddenRemotes = this.gitRepos[this.currentRepo].hideRemotes;
@@ -492,8 +506,25 @@ class GitGraphView {
 			this.saveState();
 
 			this.renderCdvExternalDiffBtn();
+			this.requestLoadPullRequests();
 		}
 		this.settingsWidget.refresh();
+	}
+
+	public processLoadPullRequestsResponse(msg: GG.ResponseLoadPullRequests) {
+		if (this.currentRepo !== msg.repo || this.loadPullRequestsRefreshId !== msg.refreshId) return;
+
+		if (msg.authenticationRequired) {
+			this.pullRequests = [];
+			this.pullRequestsLoaded = false;
+			this.pullRequestAuthenticationRequired = true;
+		} else if (msg.error === null) {
+			this.pullRequests = msg.pullRequests;
+			this.pullRequestsLoaded = true;
+			this.pullRequestAuthenticationRequired = false;
+		}
+		this.saveState();
+		if (this.commits.length > 0) this.renderTable();
 	}
 
 	private displayLoadDataError(message: string, reason: string) {
@@ -567,6 +598,11 @@ class GitGraphView {
 		return this.gitConfig;
 	}
 
+	public getEffectivePullRequestConfig(): Readonly<GG.PullRequestConfig> | null {
+		const configured = this.gitRepos[this.currentRepo].pullRequestConfig;
+		return configured !== null ? configured : getAutoBitbucketPullRequestConfig(this.gitConfig, this.gitBranches);
+	}
+
 	public getRepoState(repo: string): Readonly<GG.GitRepoState> | null {
 		return typeof this.gitRepos[repo] !== 'undefined'
 			? this.gitRepos[repo]
@@ -585,6 +621,10 @@ class GitGraphView {
 			this.clearCommits();
 		}
 		this.requestLoadRepoInfoAndCommits(hard, false, configChanges);
+	}
+
+	public refreshPullRequests() {
+		this.requestLoadPullRequests();
 	}
 
 
@@ -621,6 +661,40 @@ class GitGraphView {
 		});
 	}
 
+	private requestLoadPullRequests() {
+		const refreshId = ++this.loadPullRequestsRefreshId;
+		const config = this.getEffectivePullRequestConfig();
+		if (config === null || config.provider !== GG.PullRequestProvider.Bitbucket) {
+			this.pullRequests = [];
+			this.pullRequestsLoaded = false;
+			this.pullRequestAuthenticationRequired = false;
+			this.pullRequestQueryKey = null;
+			this.saveState();
+			if (this.commits.length > 0) this.renderTable();
+			return;
+		}
+
+		const queryKey = JSON.stringify([
+			config.hostRootUrl, config.sourceRemote, config.sourceOwner, config.sourceRepo,
+			config.destOwner, config.destRepo, this.gitBranches
+		]);
+		if (this.pullRequestQueryKey !== queryKey) {
+			this.pullRequests = [];
+			this.pullRequestsLoaded = false;
+			this.pullRequestAuthenticationRequired = false;
+			this.pullRequestQueryKey = queryKey;
+			this.saveState();
+			if (this.commits.length > 0) this.renderTable();
+		}
+		sendMessage({
+			command: 'loadPullRequests',
+			repo: this.currentRepo,
+			refreshId: refreshId,
+			config: config,
+			branches: this.gitBranches
+		});
+	}
+
 	private requestLoadRepoInfoAndCommits(hard: boolean, skipRepoInfo: boolean, configChanges: boolean = false) {
 		const refreshState = this.currentRepoRefreshState;
 		if (refreshState.inProgress) {
@@ -652,6 +726,7 @@ class GitGraphView {
 			refreshState.requestingRepoInfo = true;
 			this.requestLoadRepoInfo();
 		}
+		this.requestLoadPullRequests();
 	}
 
 	public requestLoadConfig() {
@@ -718,6 +793,10 @@ class GitGraphView {
 			gitRemotes: this.gitRemotes,
 			gitStashes: this.gitStashes,
 			gitTags: this.gitTags,
+			pullRequests: this.pullRequests,
+			pullRequestsLoaded: this.pullRequestsLoaded,
+			pullRequestAuthenticationRequired: this.pullRequestAuthenticationRequired,
+			pullRequestQueryKey: this.pullRequestQueryKey,
 			commits: this.commits,
 			commitHead: this.commitHead,
 			avatars: this.avatars,
@@ -806,6 +885,53 @@ class GitGraphView {
 		this.graph.render(expandedCommit);
 	}
 
+	private getPullRequestLabelHtml(branchName: string, canCreate: boolean) {
+		const pullRequests = this.pullRequests.filter((pullRequest) => pullRequest.sourceBranch === branchName);
+		if (pullRequests.length > 0) {
+			return pullRequests.map((pullRequest) => {
+				let statusClass: string, statusDescription: string, statusIcon: string, statusCount = 0;
+				if (pullRequest.state === 'MERGED') {
+					statusClass = 'merged';
+					statusDescription = 'merged';
+					statusIcon = SVG_ICONS.merged;
+				} else if (pullRequest.state === 'DECLINED') {
+					statusClass = 'declined';
+					statusDescription = 'declined';
+					statusIcon = SVG_ICONS.close;
+				} else if (pullRequest.state === 'SUPERSEDED') {
+					statusClass = 'superseded';
+					statusDescription = 'superseded';
+					statusIcon = SVG_ICONS.inconclusive;
+				} else if (pullRequest.changesRequested > 0) {
+					statusClass = 'changesRequested';
+					statusDescription = pullRequest.changesRequested + ' change request' + (pullRequest.changesRequested === 1 ? '' : 's');
+					if (pullRequest.approvals > 0) statusDescription += ', ' + pullRequest.approvals + ' approval' + (pullRequest.approvals === 1 ? '' : 's');
+					statusIcon = SVG_ICONS.failed;
+					statusCount = pullRequest.changesRequested;
+				} else if (pullRequest.approvals > 0) {
+					statusClass = 'approved';
+					statusDescription = pullRequest.approvals + ' approval' + (pullRequest.approvals === 1 ? '' : 's');
+					statusIcon = SVG_ICONS.passed;
+					statusCount = pullRequest.approvals;
+				} else {
+					statusClass = 'awaitingReview';
+					statusDescription = 'awaiting review';
+					statusIcon = SVG_ICONS.inconclusive;
+				}
+				const statusHtml = '<span class="gitRefPullRequestStatus ' + statusClass + '">' + statusIcon + (statusCount > 1 ? '<span>' + statusCount + '</span>' : '') + '</span>';
+				return '<span class="gitRefPullRequest" data-action="open" data-url="' + escapeHtml(pullRequest.url) + '" title="Open Bitbucket Pull Request #' + pullRequest.id + ' (' + statusDescription + ')' + (pullRequest.title !== '' ? ': ' + escapeHtml(pullRequest.title) : '') + '">PR #' + pullRequest.id + statusHtml + '</span>';
+			}).join('');
+		}
+
+		if (!canCreate || PROTECTED_PULL_REQUEST_BRANCHES.includes(branchName.toLowerCase())) return '';
+		if (this.pullRequestAuthenticationRequired) {
+			return '<span class="gitRefPullRequest authenticate" data-action="authenticate" title="Set a Bitbucket Cloud API token to check for Pull Requests">PR ?</span>';
+		}
+		return this.pullRequestsLoaded
+			? '<span class="gitRefPullRequest create" data-action="create" data-branch="' + escapeHtml(branchName) + '" title="Create a Bitbucket Pull Request">' + SVG_ICONS.plus + '</span>'
+			: '';
+	}
+
 	private renderTable() {
 		const colVisibility = this.getColumnVisibility();
 		const currentHash = this.commits.length > 0 && this.commits[0].hash === UNCOMMITTED ? UNCOMMITTED : this.commitHead;
@@ -832,20 +958,28 @@ class GitGraphView {
 			let refBranches = '', refTags = '', j, k, refName, remoteName, refActive, refHtml, branchCheckedOutAtCommit: string | null = null;
 
 			for (j = 0; j < branchLabels.heads.length; j++) {
-				refName = escapeHtml(branchLabels.heads[j].name);
+				const branchName = branchLabels.heads[j].name;
+				refName = escapeHtml(branchName);
 				refActive = branchLabels.heads[j].name === this.gitBranchHead;
 				refHtml = '<span class="gitRef head' + (refActive ? ' active' : '') + '" data-name="' + refName + '">' + SVG_ICONS.branch + '<span class="gitRefName" data-fullref="' + refName + '">' + refName + '</span>';
 				for (k = 0; k < branchLabels.heads[j].remotes.length; k++) {
 					remoteName = escapeHtml(branchLabels.heads[j].remotes[k]);
 					refHtml += '<span class="gitRefHeadRemote" data-remote="' + remoteName + '" data-fullref="' + escapeHtml(branchLabels.heads[j].remotes[k] + '/' + branchLabels.heads[j].name) + '">' + remoteName + '</span>';
 				}
+				const pullRequestConfig = this.getEffectivePullRequestConfig();
+				refHtml += this.getPullRequestLabelHtml(branchName, pullRequestConfig !== null && pullRequestConfig.provider === GG.PullRequestProvider.Bitbucket && this.gitRemotes.includes(pullRequestConfig.sourceRemote));
 				refHtml += '</span>';
 				refBranches = refActive ? refHtml + refBranches : refBranches + refHtml;
 				if (refActive) branchCheckedOutAtCommit = this.gitBranchHead;
 			}
 			for (j = 0; j < branchLabels.remotes.length; j++) {
-				refName = escapeHtml(branchLabels.remotes[j].name);
-				refBranches += '<span class="gitRef remote" data-name="' + refName + '" data-remote="' + (branchLabels.remotes[j].remote !== null ? escapeHtml(branchLabels.remotes[j].remote!) : '') + '">' + SVG_ICONS.branch + '<span class="gitRefName" data-fullref="' + refName + '">' + refName + '</span></span>';
+				const remoteRef = branchLabels.remotes[j];
+				const remote = remoteRef.remote;
+				const branchName = remote !== null ? remoteRef.name.substring(remote.length + 1) : '';
+				const pullRequestConfig = this.getEffectivePullRequestConfig();
+				refName = escapeHtml(remoteRef.name);
+				refBranches += '<span class="gitRef remote" data-name="' + refName + '" data-remote="' + (remote !== null ? escapeHtml(remote) : '') + '">' + SVG_ICONS.branch + '<span class="gitRefName" data-fullref="' + refName + '">' + refName + '</span>' +
+					this.getPullRequestLabelHtml(branchName, branchName !== 'HEAD' && pullRequestConfig !== null && pullRequestConfig.provider === GG.PullRequestProvider.Bitbucket && pullRequestConfig.sourceRemote === remote) + '</span>';
 			}
 
 			for (j = 0; j < commit.tags.length; j++) {
@@ -1058,9 +1192,9 @@ class GitGraphView {
 			this.getViewIssueAction(refName, visibility.viewIssue, target),
 			{
 				title: 'Create Pull Request' + ELLIPSIS,
-				visible: visibility.createPullRequest && this.gitRepos[this.currentRepo].pullRequestConfig !== null,
+				visible: visibility.createPullRequest && this.getEffectivePullRequestConfig() !== null,
 				onClick: () => {
-					const config = this.gitRepos[this.currentRepo].pullRequestConfig;
+					const config = this.getEffectivePullRequestConfig();
 					if (config === null) return;
 					dialog.showCheckbox('Are you sure you want to create a Pull Request for branch <b><i>' + escapeHtml(refName) + '</i></b>?', 'Push branch before creating the Pull Request', true, 'Yes, create Pull Request', (push) => {
 						runAction({ command: 'createPullRequest', repo: this.currentRepo, config: config, sourceRemote: config.sourceRemote, sourceOwner: config.sourceOwner, sourceRepo: config.sourceRepo, sourceBranch: refName, push: push }, 'Creating Pull Request');
@@ -1287,10 +1421,10 @@ class GitGraphView {
 			this.getViewIssueAction(refName, visibility.viewIssue, target),
 			{
 				title: 'Create Pull Request',
-				visible: visibility.createPullRequest && this.gitRepos[this.currentRepo].pullRequestConfig !== null && branchName !== 'HEAD' &&
-					(this.gitRepos[this.currentRepo].pullRequestConfig!.sourceRemote === remote || this.gitRepos[this.currentRepo].pullRequestConfig!.destRemote === remote),
+				visible: visibility.createPullRequest && this.getEffectivePullRequestConfig() !== null && branchName !== 'HEAD' &&
+					(this.getEffectivePullRequestConfig()!.sourceRemote === remote || this.getEffectivePullRequestConfig()!.destRemote === remote),
 				onClick: () => {
-					const config = this.gitRepos[this.currentRepo].pullRequestConfig;
+					const config = this.getEffectivePullRequestConfig();
 					if (config === null) return;
 					const isDestRemote = config.destRemote === remote;
 					runAction({
@@ -2205,6 +2339,36 @@ class GitGraphView {
 			if (e.target === null) return;
 			const eventTarget = <Element>e.target;
 			if (isUrlElem(eventTarget)) return;
+			const pullRequestElem = <HTMLElement | null>eventTarget.closest('.gitRefPullRequest');
+			if (pullRequestElem !== null) {
+				handledEvent(e);
+				if (pullRequestElem.dataset.action === 'open') {
+					sendMessage({ command: 'openExternalUrl', url: unescapeHtml(pullRequestElem.dataset.url!) });
+				} else if (pullRequestElem.dataset.action === 'authenticate') {
+					sendMessage({ command: 'setBitbucketApiToken' });
+				} else if (pullRequestElem.dataset.action === 'create') {
+					const config = this.getEffectivePullRequestConfig();
+					if (config === null || config.provider !== GG.PullRequestProvider.Bitbucket) return;
+					const branchName = unescapeHtml(pullRequestElem.dataset.branch!);
+					const remoteBranchExists = this.gitBranches.includes('remotes/' + config.sourceRemote + '/' + branchName);
+					const createPullRequest = (push: boolean) => runAction({
+						command: 'createPullRequest',
+						repo: this.currentRepo,
+						config: config,
+						sourceRemote: config.sourceRemote,
+						sourceOwner: config.sourceOwner,
+						sourceRepo: config.sourceRepo,
+						sourceBranch: branchName,
+						push: push
+					}, 'Creating Pull Request');
+					if (remoteBranchExists) {
+						createPullRequest(false);
+					} else {
+						dialog.showConfirmation('The branch <b><i>' + escapeHtml(branchName) + '</i></b> must be pushed to <b><i>' + escapeHtml(config.sourceRemote) + '</i></b> before creating a Pull Request.', 'Push and create Pull Request', () => createPullRequest(true), null);
+					}
+				}
+				return;
+			}
 			let eventElem: HTMLElement | null;
 
 			if ((eventElem = eventTarget.closest('.gitRef')) !== null) {
@@ -2241,6 +2405,7 @@ class GitGraphView {
 		this.tableElem.addEventListener('dblclick', (e: MouseEvent) => {
 			if (e.target === null) return;
 			const eventTarget = <Element>e.target;
+			if (eventTarget.closest('.gitRefPullRequest') !== null) return;
 			if (isUrlElem(eventTarget)) return;
 			let eventElem: HTMLElement | null;
 
@@ -2278,6 +2443,7 @@ class GitGraphView {
 		this.tableElem.addEventListener('contextmenu', (e: Event) => {
 			if (e.target === null) return;
 			const eventTarget = <Element>e.target;
+			if (eventTarget.closest('.gitRefPullRequest') !== null) return;
 			if (isUrlElem(eventTarget)) return;
 			let eventElem: HTMLElement | null;
 
@@ -3303,6 +3469,9 @@ window.addEventListener('load', () => {
 			case 'loadConfig':
 				gitGraph.processLoadConfig(msg);
 				break;
+			case 'loadPullRequests':
+				gitGraph.processLoadPullRequestsResponse(msg);
+				break;
 			case 'loadRepoInfo':
 				gitGraph.processLoadRepoInfoResponse(msg);
 				break;
@@ -3377,6 +3546,9 @@ window.addEventListener('load', () => {
 				break;
 			case 'setGlobalViewState':
 				finishOrDisplayError(msg.error, 'Unable to save the Global View State');
+				break;
+			case 'setBitbucketApiToken':
+				if (msg.stored) gitGraph.refreshPullRequests();
 				break;
 			case 'setWorkspaceViewState':
 				finishOrDisplayError(msg.error, 'Unable to save the Workspace View State');

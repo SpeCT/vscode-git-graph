@@ -48,6 +48,9 @@ View a Git Graph of your repository, and easily perform Git actions from the gra
         * Configure "Pull Request Creation" - Automates the opening and pre-filling of a Pull Request form, directly from a branches context menu.
             * Support for the publicly hosted Bitbucket, GitHub and GitLab Pull Request providers is built-in.
             * Custom Pull Request providers can be configured using the Extension Setting `git-graph.customPullRequestProviders` (e.g. for use with privately hosted Pull Request providers). Information on how to configure custom providers is available [here](https://github.com/mhutchie/vscode-git-graph/wiki/Configuring-a-custom-Pull-Request-Provider).
+            * For Bitbucket Cloud repositories, all Pull Requests are displayed beside branch labels with a compact lifecycle / review status indicator (e.g. merged, approved, changes requested, or awaiting review). Branches that have never had a Pull Request have a button that opens Bitbucket's pre-filled creation page (except `develop`, `main`, `master`, `preprod`, and `production`).
+            * Bitbucket Cloud repositories are automatically detected from their Git remote URLs. `origin` is used as the source remote, and `upstream` as the destination when present. The Repository Settings Widget remains available for per-repository overrides.
+            * Private Bitbucket Cloud repositories require an API token with **Pull requests: Read** permission. Use the `Git Graph: Set Bitbucket Cloud API Token...` command; the token is stored in Visual Studio Code's encrypted Secret Storage. Pull Requests are still created in the browser.
         * Export your Git Graph Repository Configuration to a file that can be committed in the repository. It allows others working in the same repository to automatically use the same Git Graph configuration.
     * Keyboard Shortcuts (available in the Git Graph View):
         * `CTRL/CMD + F`: Open the Find Widget.
@@ -150,6 +153,8 @@ This extension contributes the following commands:
 * `git-graph.view`: Git Graph: View Git Graph
 * `git-graph.addGitRepository`: Git Graph: Add Git Repository... _(used to add sub-repos to Git Graph)_
 * `git-graph.clearAvatarCache`: Git Graph: Clear Avatar Cache
+* `git-graph.setBitbucketApiToken`: Git Graph: Set Bitbucket Cloud API Token...
+* `git-graph.clearBitbucketApiToken`: Git Graph: Clear Bitbucket Cloud API Token
 * `git-graph.endAllWorkspaceCodeReviews`: Git Graph: End All Code Reviews in Workspace
 * `git-graph.endSpecificWorkspaceCodeReview`: Git Graph: End a specific Code Review in Workspace... _(used to end a specific Code Review without having to first open it in the Git Graph View)_
 * `git-graph.fetch`: Git Graph: Fetch from Remote(s) _(used to open the Git Graph View and immediately run "Fetch from Remote(s)")_

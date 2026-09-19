@@ -197,6 +197,16 @@ interface PullRequestConfigCustom extends PullRequestConfigBase {
 
 export type PullRequestConfig = PullRequestConfigBuiltIn | PullRequestConfigCustom;
 
+export interface BitbucketPullRequest {
+	readonly id: number;
+	readonly sourceBranch: string;
+	readonly state: 'OPEN' | 'MERGED' | 'DECLINED' | 'SUPERSEDED';
+	readonly approvals: number;
+	readonly changesRequested: number;
+	readonly title: string;
+	readonly url: string;
+}
+
 export interface GitRepoState {
 	cdvDivider: number;
 	cdvHeight: number;
@@ -932,6 +942,20 @@ export interface ResponseLoadConfig extends ResponseWithErrorInfo {
 	readonly config: GitRepoConfig | null;
 }
 
+export interface RequestLoadPullRequests extends RepoRequest {
+	readonly command: 'loadPullRequests';
+	readonly refreshId: number;
+	readonly config: PullRequestConfig | null;
+	readonly branches: ReadonlyArray<string>;
+}
+export interface ResponseLoadPullRequests extends ResponseWithErrorInfo {
+	readonly command: 'loadPullRequests';
+	readonly repo: string;
+	readonly refreshId: number;
+	readonly pullRequests: BitbucketPullRequest[];
+	readonly authenticationRequired: boolean;
+}
+
 export interface RequestLoadRepoInfo extends RepoRequest {
 	readonly command: 'loadRepoInfo';
 	readonly refreshId: number;
@@ -1163,6 +1187,14 @@ export interface RequestSetWorkspaceViewState extends BaseMessage {
 	readonly command: 'setWorkspaceViewState';
 	readonly state: GitGraphViewWorkspaceState;
 }
+
+export interface RequestSetBitbucketApiToken extends BaseMessage {
+	readonly command: 'setBitbucketApiToken';
+}
+export interface ResponseSetBitbucketApiToken extends BaseMessage {
+	readonly command: 'setBitbucketApiToken';
+	readonly stored: boolean;
+}
 export interface ResponseSetWorkspaceViewState extends ResponseWithErrorInfo {
 	readonly command: 'setWorkspaceViewState';
 }
@@ -1279,6 +1311,7 @@ export type RequestMessage =
 	| RequestFetchIntoLocalBranch
 	| RequestLoadCommits
 	| RequestLoadConfig
+	| RequestLoadPullRequests
 	| RequestLoadRepoInfo
 	| RequestLoadRepos
 	| RequestMerge
@@ -1300,6 +1333,7 @@ export type RequestMessage =
 	| RequestResetToCommit
 	| RequestRevertCommit
 	| RequestSetGlobalViewState
+	| RequestSetBitbucketApiToken
 	| RequestSetRepoState
 	| RequestSetWorkspaceViewState
 	| RequestShowErrorDialog
@@ -1342,6 +1376,7 @@ export type ResponseMessage =
 	| ResponseFetchIntoLocalBranch
 	| ResponseLoadCommits
 	| ResponseLoadConfig
+	| ResponseLoadPullRequests
 	| ResponseLoadRepoInfo
 	| ResponseLoadRepos
 	| ResponseMerge
@@ -1363,6 +1398,7 @@ export type ResponseMessage =
 	| ResponseResetToCommit
 	| ResponseRevertCommit
 	| ResponseSetGlobalViewState
+	| ResponseSetBitbucketApiToken
 	| ResponseSetWorkspaceViewState
 	| ResponseStartCodeReview
 	| ResponseTagDetails
