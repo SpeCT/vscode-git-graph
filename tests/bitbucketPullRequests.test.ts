@@ -42,38 +42,38 @@ describe('Bitbucket Pull Requests', () => {
 					state: 'OPEN',
 					title: 'Feature PR',
 					participants: [{ state: 'approved', approved: true }, { state: 'changes_requested', approved: false }],
-					source: { branch: { name: 'feature/test' }, repository: { full_name: 'source-workspace/source-repo' } },
+					source: { branch: { name: 'feature/test' }, commit: { hash: '1111111' }, repository: { full_name: 'source-workspace/source-repo' } },
 					links: { html: { href: 'https://bitbucket.org/destination-workspace/destination-repo/pull-requests/123' } }
 				}, {
 					id: 124,
 					state: 'MERGED',
 					title: 'Merged feature PR',
 					participants: [{ state: 'approved', approved: true }],
-					source: { branch: { name: 'feature/merged' }, repository: { full_name: 'source-workspace/source-repo' } },
+					source: { branch: { name: 'feature/merged' }, commit: { hash: '2222222' }, repository: { full_name: 'source-workspace/source-repo' } },
 					links: { html: { href: 'https://bitbucket.org/destination-workspace/destination-repo/pull-requests/124' } }
 				}, {
 					id: 125,
 					state: 'DECLINED',
 					title: 'Declined feature PR',
-					source: { branch: { name: 'feature/declined' }, repository: { full_name: 'source-workspace/source-repo' } },
+					source: { branch: { name: 'feature/declined' }, commit: { hash: '3333333' }, repository: { full_name: 'source-workspace/source-repo' } },
 					links: { html: { href: 'https://bitbucket.org/destination-workspace/destination-repo/pull-requests/125' } }
 				}, {
 					id: 126,
 					state: 'SUPERSEDED',
 					title: 'Superseded feature PR',
-					source: { branch: { name: 'feature/superseded' }, repository: { full_name: 'source-workspace/source-repo' } },
+					source: { branch: { name: 'feature/superseded' }, commit: { hash: '4444444' }, repository: { full_name: 'source-workspace/source-repo' } },
 					links: { html: { href: 'https://bitbucket.org/destination-workspace/destination-repo/pull-requests/126' } }
 				}, {
 					id: 127,
 					state: 'OPEN',
 					title: 'PR from another fork',
-					source: { branch: { name: 'feature/test' }, repository: { full_name: 'someone-else/source-repo' } },
+					source: { branch: { name: 'feature/test' }, commit: { hash: '5555555' }, repository: { full_name: 'someone-else/source-repo' } },
 					links: { html: { href: 'https://bitbucket.org/destination-workspace/destination-repo/pull-requests/127' } }
 				}, {
 					id: 128,
 					state: 'OPEN',
 					title: 'PR for an unrelated branch',
-					source: { branch: { name: 'feature/unrelated' }, repository: { full_name: 'source-workspace/source-repo' } },
+					source: { branch: { name: 'feature/unrelated' }, commit: { hash: '6666666' }, repository: { full_name: 'source-workspace/source-repo' } },
 					links: { html: { href: 'https://bitbucket.org/destination-workspace/destination-repo/pull-requests/128' } }
 				}]
 			})
@@ -88,6 +88,7 @@ describe('Bitbucket Pull Requests', () => {
 			pullRequests: [{
 				id: 123,
 				sourceBranch: 'feature/test',
+				sourceCommit: '1111111',
 				state: 'OPEN',
 				approvals: 1,
 				changesRequested: 1,
@@ -96,6 +97,7 @@ describe('Bitbucket Pull Requests', () => {
 			}, {
 				id: 124,
 				sourceBranch: 'feature/merged',
+				sourceCommit: '2222222',
 				state: 'MERGED',
 				approvals: 1,
 				changesRequested: 0,
@@ -104,6 +106,7 @@ describe('Bitbucket Pull Requests', () => {
 			}, {
 				id: 125,
 				sourceBranch: 'feature/declined',
+				sourceCommit: '3333333',
 				state: 'DECLINED',
 				approvals: 0,
 				changesRequested: 0,
@@ -112,6 +115,7 @@ describe('Bitbucket Pull Requests', () => {
 			}, {
 				id: 126,
 				sourceBranch: 'feature/superseded',
+				sourceCommit: '4444444',
 				state: 'SUPERSEDED',
 				approvals: 0,
 				changesRequested: 0,
@@ -128,6 +132,7 @@ describe('Bitbucket Pull Requests', () => {
 		}), expect.anything());
 		const requestPath = (<jest.Mock>https.get).mock.calls[0][0].path;
 		expect(requestPath).toContain('pagelen=50');
+		expect(requestPath).toContain('values.source.commit.hash');
 		expect(decodeURIComponent(requestPath)).toContain('source.repository.full_name = "source-workspace/source-repo"');
 		expect(decodeURIComponent(requestPath)).toContain('source.branch.name IN ("feature/declined", "feature/merged", "feature/superseded", "feature/test")');
 	});

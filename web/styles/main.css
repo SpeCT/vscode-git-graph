@@ -804,6 +804,9 @@ body.vscode-high-contrast #commitTable tr.commit.findCurrentCommit{
 	background-color:rgba(128,128,128,0.1);
 }
 
+body.branchLabelsAlignedToGraph tr.commit td:first-child{
+	vertical-align:top;
+}
 body.branchLabelsAlignedToGraph tr.commit td:first-child .gitRef:last-child{
 	margin-right:0;
 }

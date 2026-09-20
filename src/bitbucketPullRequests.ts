@@ -18,6 +18,7 @@ interface BitbucketApiPullRequest {
 	}>;
 	source?: {
 		branch?: { name?: string };
+		commit?: { hash?: string };
 		repository?: { full_name?: string };
 	};
 	links?: { html?: { href?: string } };
@@ -143,7 +144,7 @@ async function loadBitbucketPullRequestBatch(config: PullRequestConfig, apiToken
 	const query = getFilter(expectedSourceRepo, sourceBranches);
 	let nextUrl: string | null = 'https://' + BITBUCKET_API_HOST + '/2.0/repositories/' + encodeURIComponent(config.destOwner) + '/' + encodeURIComponent(config.destRepo) +
 		'/pullrequests?state=OPEN&state=MERGED&state=DECLINED&state=SUPERSEDED&pagelen=50&q=' + encodeURIComponent(query) +
-		'&fields=values.id,values.state,values.title,values.participants.approved,values.participants.state,values.source.branch.name,values.source.repository.full_name,values.links.html.href,next';
+		'&fields=values.id,values.state,values.title,values.participants.approved,values.participants.state,values.source.branch.name,values.source.commit.hash,values.source.repository.full_name,values.links.html.href,next';
 	const pullRequests: BitbucketPullRequest[] = [];
 	const expectedSourceBranches = new Set(sourceBranches);
 
@@ -179,13 +180,15 @@ async function loadBitbucketPullRequestBatch(config: PullRequestConfig, apiToken
 		const values = Array.isArray(page.values) ? page.values : [];
 		values.forEach((pullRequest) => {
 			const sourceBranch = pullRequest.source && pullRequest.source.branch && pullRequest.source.branch.name;
+			const sourceCommit = pullRequest.source && pullRequest.source.commit && pullRequest.source.commit.hash;
 			const sourceRepo = pullRequest.source && pullRequest.source.repository && pullRequest.source.repository.full_name;
 			const url = pullRequest.links && pullRequest.links.html && pullRequest.links.html.href;
-			if (typeof pullRequest.id === 'number' && isPullRequestState(pullRequest.state) && typeof sourceBranch === 'string' && expectedSourceBranches.has(sourceBranch) && typeof sourceRepo === 'string' && sourceRepo.toLowerCase() === expectedSourceRepo && typeof url === 'string') {
+			if (typeof pullRequest.id === 'number' && isPullRequestState(pullRequest.state) && typeof sourceBranch === 'string' && expectedSourceBranches.has(sourceBranch) && typeof sourceCommit === 'string' && sourceCommit !== '' && typeof sourceRepo === 'string' && sourceRepo.toLowerCase() === expectedSourceRepo && typeof url === 'string') {
 				const participants = Array.isArray(pullRequest.participants) ? pullRequest.participants : [];
 				pullRequests.push({
 					id: pullRequest.id,
 					sourceBranch: sourceBranch,
+					sourceCommit: sourceCommit,
 					state: pullRequest.state,
 					approvals: participants.filter((participant) => participant.state === 'approved' || participant.approved === true).length,
 					changesRequested: participants.filter((participant) => participant.state === 'changes_requested').length,

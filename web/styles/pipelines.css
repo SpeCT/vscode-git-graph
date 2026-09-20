@@ -1,0 +1,76 @@
+.commitPipeline{
+	display:inline-flex;
+	align-items:flex-start;
+	flex-shrink:0;
+	min-width:1px;
+	min-height:1px;
+	vertical-align:top;
+}
+.commitPipelineBadge{
+	display:inline-flex;
+	box-sizing:content-box;
+	align-items:center;
+	gap:4px;
+	height:18px;
+	padding:0 5px;
+	margin:2px 5px 0 0;
+	border:1px solid currentColor;
+	border-radius:5px;
+	background:transparent;
+	font:inherit;
+	font-size:12px;
+	line-height:18px;
+	cursor:pointer;
+	vertical-align:top;
+}
+.commitPipelineBadge:hover, .pipelineNotice:hover{
+	background:var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.15));
+}
+.commitPipelineBadge:focus-visible, .pipelineNotice:focus-visible{
+	outline:1px solid var(--vscode-focusBorder);
+	outline-offset:2px;
+}
+.commitPipelineBadge svg, .pipelineState svg{
+	width:11px;
+	height:11px;
+	fill:currentColor;
+	vertical-align:middle;
+}
+.commitPipelineBadge.passed, .pipelineState.passed{
+	color:var(--vscode-testing-iconPassed, #73c991);
+}
+.commitPipelineBadge.failed, .pipelineState.failed{
+	color:var(--vscode-testing-iconFailed, #f14c4c);
+}
+.commitPipelineBadge.running, .pipelineState.running{
+	color:var(--vscode-progressBar-background, #3794ff);
+}
+.commitPipelineBadge.pending, .commitPipelineBadge.paused, .pipelineState.pending, .pipelineState.paused{
+	color:var(--vscode-testing-iconQueued, #cca700);
+}
+.commitPipelineBadge.stopped, .commitPipelineBadge.unknown, .pipelineState.stopped, .pipelineState.unknown{
+	color:var(--vscode-descriptionForeground);
+}
+.pipelineRuns{
+	max-height:55vh;
+	overflow:auto;
+	margin-top:12px;
+	text-align:left;
+}
+.pipelineRun{
+	padding:8px 0;
+	border-bottom:1px solid var(--vscode-widget-border, rgba(128,128,128,0.3));
+}
+.pipelineRunDate{
+	margin-top:4px;
+	color:var(--vscode-descriptionForeground);
+	font-size:11px;
+}
+.pipelineNotice{
+	margin:8px;
+	border:0;
+	background:transparent;
+	color:var(--vscode-textLink-foreground);
+	font:inherit;
+	cursor:pointer;
+}

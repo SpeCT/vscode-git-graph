@@ -1,7 +1,17 @@
 # Change Log
 
+## 1.30.9 - 2026-09-20
+* Match pipeline badges to branch labels in height, vertical alignment, text size, and corner radius.
+
+## 1.30.8 - 2026-09-20
+* Show Bitbucket Cloud pipeline status beside commit messages. Hover for the latest runs, or click to see all runs and open them in Bitbucket.
+* Load pipeline data for visible commits with bounded concurrency and caching. Active runs refresh about every 30 seconds; other visible commits are checked every two minutes. Refresh the graph to request an immediate update.
+* Reuse the configured Bitbucket source repository and securely stored token. Pipeline access requires Pipelines: Read permission.
+
 ## Unreleased
 * Display all Bitbucket Cloud Pull Requests beside branch labels, including compact lifecycle and review status indicators, with links to open them in the browser. Pull Requests are loaded using server-side branch filtering, connection reuse, request deduplication, and a short-lived cache.
+* Treat new commits on a branch after its Pull Request was closed as new work, offering creation of another Pull Request instead of showing the previous closed Pull Request.
+* Require the local branch tip to match its source-remote branch before opening the Pull Request creation page, and offer to push when it does not.
 * Add a create Pull Request button beside eligible branches that have never had a Pull Request. The button opens Bitbucket's pre-filled creation page.
 * Automatically configure Bitbucket Cloud Pull Request integration from Git remotes, while retaining optional per-repository overrides.
 * Store the optional read-only Bitbucket Cloud API token in Visual Studio Code Secret Storage.

@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { AvatarManager } from './avatarManager';
+import { clearBitbucketPipelineCache, getBitbucketPipelines } from './bitbucketPipelines';
 import { clearBitbucketPullRequestCache, getBitbucketPullRequests } from './bitbucketPullRequests';
 import { getConfig } from './config';
 import { DataSource, GitCommitDetailsData, GitConfigKey } from './dataSource';
@@ -35,7 +36,7 @@ export class GitGraphView extends Disposable {
 	private loadCommitsRefreshId: number = 0;
 
 	public refreshPullRequests() {
-		this.sendMessage({ command: 'refresh' });
+		this.sendMessage({ command: 'refresh', refreshBitbucket: true });
 	}
 
 	/**
@@ -424,6 +425,15 @@ export class GitGraphView extends Disposable {
 					...await this.dataSource.getConfig(msg.repo, msg.remotes)
 				});
 				break;
+			case 'loadPipelines':
+				this.sendMessage({
+					command: 'loadPipelines',
+					repo: msg.repo,
+					refreshId: msg.refreshId,
+					commit: msg.commit,
+					...await getBitbucketPipelines(msg.config, await this.extensionState.getBitbucketApiToken(), msg.commit, msg.force)
+				});
+				break;
 			case 'loadPullRequests':
 				const pullRequestResult = msg.config !== null && msg.config.provider === PullRequestProvider.Bitbucket
 					? await getBitbucketPullRequests(msg.config, await this.extensionState.getBitbucketApiToken(), msg.branches)
@@ -587,11 +597,12 @@ export class GitGraphView extends Disposable {
 					ignoreFocusOut: true,
 					password: true,
 					placeHolder: 'Bitbucket Cloud API token',
-					prompt: 'Enter an API token with Pull requests: Read permission.'
+					prompt: 'Enter a token with Pull requests: Read and Pipelines: Read permissions.'
 				});
 				if (typeof bitbucketApiToken !== 'undefined' && bitbucketApiToken.trim() !== '') {
 					await this.extensionState.setBitbucketApiToken(bitbucketApiToken.trim());
 					clearBitbucketPullRequestCache();
+					clearBitbucketPipelineCache();
 				}
 				this.sendMessage({
 					command: 'setBitbucketApiToken',

@@ -32,6 +32,7 @@ class GitGraphView {
 	};
 	private loadViewTo: GG.LoadGitGraphViewTo = null;
 
+	private readonly pipelines: PipelineView;
 	private readonly graph: Graph;
 	private readonly config: Config;
 
@@ -79,6 +80,7 @@ class GitGraphView {
 		this.tableElem = document.getElementById('commitTable')!;
 		this.footerElem = document.getElementById('footer')!;
 		this.scrollShadowElem = <HTMLInputElement>document.getElementById('scrollShadow')!;
+		this.pipelines = new PipelineView(this.tableElem, viewElem);
 
 		viewElem.focus();
 
@@ -215,6 +217,7 @@ class GitGraphView {
 
 	private loadRepo(repo: string) {
 		this.currentRepo = repo;
+		this.pipelines.setRepository(repo, null);
 		this.currentRepoLoading = true;
 		this.showRemoteBranchesElem.checked = getShowRemoteBranches(this.gitRepos[this.currentRepo].showRemoteBranchesV2);
 		this.maxCommits = this.config.initialLoadCommits;
@@ -469,6 +472,7 @@ class GitGraphView {
 		this.saveState();
 		this.graph.loadCommits(this.commits, this.commitHead, this.commitLookup, this.onlyFollowFirstParent);
 		this.tableElem.innerHTML = '';
+		this.pipelines.observeRows();
 		this.footerElem.innerHTML = '';
 		this.renderGraph();
 		this.findWidget.refresh();
@@ -509,6 +513,10 @@ class GitGraphView {
 			this.requestLoadPullRequests();
 		}
 		this.settingsWidget.refresh();
+	}
+
+	public processLoadPipelinesResponse(msg: GG.ResponseLoadPipelines) {
+		this.pipelines.processResponse(msg);
 	}
 
 	public processLoadPullRequestsResponse(msg: GG.ResponseLoadPullRequests) {
@@ -618,12 +626,14 @@ class GitGraphView {
 
 	public refresh(hard: boolean, configChanges: boolean = false) {
 		if (hard) {
+			this.pipelines.refresh();
 			this.clearCommits();
 		}
 		this.requestLoadRepoInfoAndCommits(hard, false, configChanges);
 	}
 
 	public refreshPullRequests() {
+		this.pipelines.refresh();
 		this.requestLoadPullRequests();
 	}
 
@@ -664,6 +674,7 @@ class GitGraphView {
 	private requestLoadPullRequests() {
 		const refreshId = ++this.loadPullRequestsRefreshId;
 		const config = this.getEffectivePullRequestConfig();
+		this.pipelines.setRepository(this.currentRepo, config);
 		if (config === null || config.provider !== GG.PullRequestProvider.Bitbucket) {
 			this.pullRequests = [];
 			this.pullRequestsLoaded = false;
@@ -885,8 +896,11 @@ class GitGraphView {
 		this.graph.render(expandedCommit);
 	}
 
-	private getPullRequestLabelHtml(branchName: string, canCreate: boolean) {
-		const pullRequests = this.pullRequests.filter((pullRequest) => pullRequest.sourceBranch === branchName);
+	private getPullRequestLabelHtml(branchName: string, branchCommit: string, canCreate: boolean) {
+		const pullRequests = this.pullRequests.filter((pullRequest) => {
+			const sourceCommit = pullRequest.sourceCommit.toLowerCase(), currentCommit = branchCommit.toLowerCase();
+			return pullRequest.sourceBranch === branchName && (pullRequest.state === 'OPEN' || sourceCommit === currentCommit || sourceCommit.startsWith(currentCommit) || currentCommit.startsWith(sourceCommit));
+		});
 		if (pullRequests.length > 0) {
 			return pullRequests.map((pullRequest) => {
 				let statusClass: string, statusDescription: string, statusIcon: string, statusCount = 0;
@@ -928,8 +942,13 @@ class GitGraphView {
 			return '<span class="gitRefPullRequest authenticate" data-action="authenticate" title="Set a Bitbucket Cloud API token to check for Pull Requests">PR ?</span>';
 		}
 		return this.pullRequestsLoaded
-			? '<span class="gitRefPullRequest create" data-action="create" data-branch="' + escapeHtml(branchName) + '" title="Create a Bitbucket Pull Request">' + SVG_ICONS.plus + '</span>'
+			? '<span class="gitRefPullRequest create" data-action="create" data-branch="' + escapeHtml(branchName) + '" data-commit="' + escapeHtml(branchCommit) + '" title="Create a Bitbucket Pull Request">' + SVG_ICONS.plus + '</span>'
 			: '';
+	}
+
+	private isBranchPushedToRemote(branchName: string, branchCommit: string, remote: string) {
+		const remoteBranchName = remote + '/' + branchName;
+		return this.commits.some((commit) => commit.hash === branchCommit && commit.remotes.some((remoteRef) => remoteRef.remote === remote && remoteRef.name === remoteBranchName));
 	}
 
 	private renderTable() {
@@ -952,7 +971,7 @@ class GitGraphView {
 
 		for (let i = 0; i < this.commits.length; i++) {
 			let commit = this.commits[i];
-			let message = '<span class="text">' + textFormatter.format(commit.message) + '</span>';
+			let message = (commit.hash !== UNCOMMITTED && commit.stash === null ? '<span class="commitPipeline" data-pipeline-commit="' + escapeHtml(commit.hash) + '"></span>' : '') + '<span class="text">' + textFormatter.format(commit.message) + '</span>';
 			let date = formatShortDate(commit.date);
 			let branchLabels = getBranchLabels(commit.heads, commit.remotes);
 			let refBranches = '', refTags = '', j, k, refName, remoteName, refActive, refHtml, branchCheckedOutAtCommit: string | null = null;
@@ -967,7 +986,7 @@ class GitGraphView {
 					refHtml += '<span class="gitRefHeadRemote" data-remote="' + remoteName + '" data-fullref="' + escapeHtml(branchLabels.heads[j].remotes[k] + '/' + branchLabels.heads[j].name) + '">' + remoteName + '</span>';
 				}
 				const pullRequestConfig = this.getEffectivePullRequestConfig();
-				refHtml += this.getPullRequestLabelHtml(branchName, pullRequestConfig !== null && pullRequestConfig.provider === GG.PullRequestProvider.Bitbucket && this.gitRemotes.includes(pullRequestConfig.sourceRemote));
+				refHtml += this.getPullRequestLabelHtml(branchName, commit.hash, pullRequestConfig !== null && pullRequestConfig.provider === GG.PullRequestProvider.Bitbucket && this.gitRemotes.includes(pullRequestConfig.sourceRemote));
 				refHtml += '</span>';
 				refBranches = refActive ? refHtml + refBranches : refBranches + refHtml;
 				if (refActive) branchCheckedOutAtCommit = this.gitBranchHead;
@@ -979,7 +998,7 @@ class GitGraphView {
 				const pullRequestConfig = this.getEffectivePullRequestConfig();
 				refName = escapeHtml(remoteRef.name);
 				refBranches += '<span class="gitRef remote" data-name="' + refName + '" data-remote="' + (remote !== null ? escapeHtml(remote) : '') + '">' + SVG_ICONS.branch + '<span class="gitRefName" data-fullref="' + refName + '">' + refName + '</span>' +
-					this.getPullRequestLabelHtml(branchName, branchName !== 'HEAD' && pullRequestConfig !== null && pullRequestConfig.provider === GG.PullRequestProvider.Bitbucket && pullRequestConfig.sourceRemote === remote) + '</span>';
+					this.getPullRequestLabelHtml(branchName, commit.hash, branchName !== 'HEAD' && pullRequestConfig !== null && pullRequestConfig.provider === GG.PullRequestProvider.Bitbucket && pullRequestConfig.sourceRemote === remote) + '</span>';
 			}
 
 			for (j = 0; j < commit.tags.length; j++) {
@@ -1008,6 +1027,7 @@ class GitGraphView {
 		}
 		this.tableElem.innerHTML = '<table>' + html + '</table>';
 		this.footerElem.innerHTML = this.moreCommitsAvailable ? '<div id="loadMoreCommitsBtn" class="roundedBtn">Load More Commits</div>' : '';
+		this.pipelines.observeRows();
 		this.makeTableResizable();
 		this.findWidget.refresh();
 		this.renderedGitBranchHead = this.gitBranchHead;
@@ -2350,7 +2370,8 @@ class GitGraphView {
 					const config = this.getEffectivePullRequestConfig();
 					if (config === null || config.provider !== GG.PullRequestProvider.Bitbucket) return;
 					const branchName = unescapeHtml(pullRequestElem.dataset.branch!);
-					const remoteBranchExists = this.gitBranches.includes('remotes/' + config.sourceRemote + '/' + branchName);
+					const branchCommit = unescapeHtml(pullRequestElem.dataset.commit!);
+					const branchIsPushed = this.isBranchPushedToRemote(branchName, branchCommit, config.sourceRemote);
 					const createPullRequest = (push: boolean) => runAction({
 						command: 'createPullRequest',
 						repo: this.currentRepo,
@@ -2361,10 +2382,10 @@ class GitGraphView {
 						sourceBranch: branchName,
 						push: push
 					}, 'Creating Pull Request');
-					if (remoteBranchExists) {
+					if (branchIsPushed) {
 						createPullRequest(false);
 					} else {
-						dialog.showConfirmation('The branch <b><i>' + escapeHtml(branchName) + '</i></b> must be pushed to <b><i>' + escapeHtml(config.sourceRemote) + '</i></b> before creating a Pull Request.', 'Push and create Pull Request', () => createPullRequest(true), null);
+						dialog.showConfirmation('The latest commit on branch <b><i>' + escapeHtml(branchName) + '</i></b> must be pushed to <b><i>' + escapeHtml(config.sourceRemote) + '</i></b> before creating a Pull Request.', 'Push and create Pull Request', () => createPullRequest(true), null);
 					}
 				}
 				return;
@@ -3469,6 +3490,9 @@ window.addEventListener('load', () => {
 			case 'loadConfig':
 				gitGraph.processLoadConfig(msg);
 				break;
+			case 'loadPipelines':
+				gitGraph.processLoadPipelinesResponse(msg);
+				break;
 			case 'loadPullRequests':
 				gitGraph.processLoadPullRequestsResponse(msg);
 				break;
@@ -3530,6 +3554,7 @@ window.addEventListener('load', () => {
 				}
 				break;
 			case 'refresh':
+				if (msg.refreshBitbucket) gitGraph.refreshPullRequests();
 				gitGraph.refresh(false);
 				break;
 			case 'renameBranch':

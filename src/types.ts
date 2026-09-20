@@ -197,9 +197,23 @@ interface PullRequestConfigCustom extends PullRequestConfigBase {
 
 export type PullRequestConfig = PullRequestConfigBuiltIn | PullRequestConfigCustom;
 
+export type BitbucketPipelineStatus = 'pending' | 'running' | 'paused' | 'passed' | 'failed' | 'stopped' | 'unknown';
+
+export interface BitbucketPipeline {
+	readonly uuid: string;
+	readonly buildNumber: number;
+	readonly commit: string;
+	readonly name: string;
+	readonly group: string;
+	readonly status: BitbucketPipelineStatus;
+	readonly createdOn: string;
+	readonly url: string;
+}
+
 export interface BitbucketPullRequest {
 	readonly id: number;
 	readonly sourceBranch: string;
+	readonly sourceCommit: string;
 	readonly state: 'OPEN' | 'MERGED' | 'DECLINED' | 'SUPERSEDED';
 	readonly approvals: number;
 	readonly changesRequested: number;
@@ -942,6 +956,22 @@ export interface ResponseLoadConfig extends ResponseWithErrorInfo {
 	readonly config: GitRepoConfig | null;
 }
 
+export interface RequestLoadPipelines extends RepoRequest {
+	readonly command: 'loadPipelines';
+	readonly refreshId: number;
+	readonly config: PullRequestConfig;
+	readonly commit: string;
+	readonly force: boolean;
+}
+export interface ResponseLoadPipelines extends ResponseWithErrorInfo {
+	readonly command: 'loadPipelines';
+	readonly repo: string;
+	readonly refreshId: number;
+	readonly commit: string;
+	readonly pipelines: BitbucketPipeline[];
+	readonly authenticationRequired: boolean;
+}
+
 export interface RequestLoadPullRequests extends RepoRequest {
 	readonly command: 'loadPullRequests';
 	readonly refreshId: number;
@@ -1128,6 +1158,7 @@ export interface ResponseRebase extends ResponseWithErrorInfo {
 
 export interface ResponseRefresh extends BaseMessage {
 	readonly command: 'refresh';
+	readonly refreshBitbucket?: boolean;
 }
 
 export interface RequestRenameBranch extends RepoRequest {
@@ -1311,6 +1342,7 @@ export type RequestMessage =
 	| RequestFetchIntoLocalBranch
 	| RequestLoadCommits
 	| RequestLoadConfig
+	| RequestLoadPipelines
 	| RequestLoadPullRequests
 	| RequestLoadRepoInfo
 	| RequestLoadRepos
@@ -1376,6 +1408,7 @@ export type ResponseMessage =
 	| ResponseFetchIntoLocalBranch
 	| ResponseLoadCommits
 	| ResponseLoadConfig
+	| ResponseLoadPipelines
 	| ResponseLoadPullRequests
 	| ResponseLoadRepoInfo
 	| ResponseLoadRepos

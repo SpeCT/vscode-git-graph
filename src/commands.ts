@@ -1,6 +1,7 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
 import { AvatarManager } from './avatarManager';
+import { clearBitbucketPipelineCache } from './bitbucketPipelines';
 import { clearBitbucketPullRequestCache } from './bitbucketPullRequests';
 import { getConfig } from './config';
 import { DataSource } from './dataSource';
@@ -202,12 +203,13 @@ export class CommandManager extends Disposable {
 			ignoreFocusOut: true,
 			password: true,
 			placeHolder: 'Bitbucket Cloud API token',
-			prompt: 'Enter an API token with Pull requests: Read permission.'
+			prompt: 'Enter a token with Pull requests: Read and Pipelines: Read permissions.'
 		});
 		if (typeof token === 'undefined' || token.trim() === '') return;
 
 		await this.extensionState.setBitbucketApiToken(token.trim());
 		clearBitbucketPullRequestCache();
+		clearBitbucketPipelineCache();
 		showInformationMessage('The Bitbucket Cloud API token was securely stored by Visual Studio Code.');
 		if (GitGraphView.currentPanel) GitGraphView.currentPanel.refreshPullRequests();
 	}
@@ -215,6 +217,7 @@ export class CommandManager extends Disposable {
 	private async clearBitbucketApiToken() {
 		await this.extensionState.clearBitbucketApiToken();
 		clearBitbucketPullRequestCache();
+		clearBitbucketPipelineCache();
 		showInformationMessage('The stored Bitbucket Cloud API token was cleared.');
 		if (GitGraphView.currentPanel) GitGraphView.currentPanel.refreshPullRequests();
 	}
